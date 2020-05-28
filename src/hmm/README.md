@@ -1,3 +1,15 @@
+<head>
+    <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+    <script type="text/x-mathjax-config">
+        MathJax.Hub.Config({
+            tex2jax: {
+            skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
+            inlineMath: [['$','$']]
+            }
+        });
+    </script>
+</head>
+
 <h1>Hidden Markov Models</h1>
 
 HMM is directed probabilistic graphical model.
@@ -79,10 +91,12 @@ The time complexity is $O(\tau S^{\tau})$, $S^{\tau}$ for enumurate over the $\t
 Denote  
 > $\alpha(t, s) = P(o_1, o_2, ..., o_t, h_t=s|\theta)$
 
-Initializtion, 
+### Initializtion
+
 > $\alpha(1, s) = P(o_1, h_1=s|\theta)=\pi_sE(s, o_1), s=1, 2, ..., S$
 
-Iteration, 
+### Iteration
+
 > $\alpha(t+1, s) = P(o_1, o_2, ..., o_{t+1}, h_{t+1}=s|\theta)$
 
 > $=\sum_{i=1}^S P(o_1, o_2, ..., o_t, h_t=i,o_{t+1}, h_{t+1}=s|\theta)$
@@ -108,15 +122,221 @@ Iteration,
 > $=\sum_i P(o_1, o_2, ..., o_t, h_t=i|\theta) * T(i, s) * E(s, o_{t+1})$
 
 Thus, 
-> $\alpha(t+1, s)=\sum_i \{\alpha(t, i) T(i, s) \} E(s, o_{t+1})$
+> $\alpha(t+1, s)=\sum_{i=1}^S \{\alpha(t, i) T(i, s) \} E(s, o_{t+1}), t=1, 2, ..., T-1$
 
 
-Termination, 
+### Termination
 > $P(O|\theta)=\sum_{s=1}^S \alpha(T, s)$
+
+## Backward Algorithm
+
+Denote
+
+> $\beta(t, j) = P(o_{t+1}, ..., o_T|h_t=j;\theta)$
+
+The reason why $\beta$ is defined like this is clarified in the part of `Parameter estimation`.`definition of `$\gamma$.
+
+### Initalization
+> $\beta(\tau, j) = 1, j=1,2, ..., S$
+
+### Iteration
+> $\beta(t, i) = P(o_{t+1}, ..., o_\tau|h_t=i;\theta)$
+
+> $=\sum_{h_{t+1}=j}P(o_{t+1}, ..., o_\tau, h_{t+1}=j|h_t=i;\theta)$
+
+> $=\sum_j P(o_{t+1}, ..., o_\tau|h_{t+1}=j,h_t=i;\theta)*$
+
+> $P(h_{t+1}=j|h_t=i;\theta)$
+
+> $=\sum_j P(o_{t+1}, ..., o_\tau|h_{t+1}=j;\theta) *$
+
+> $T(i, j)$
+
+> $=\sum_j P(o_{t+2}, ..., o_\tau|h_{t+1}=j, o_{t+1};\theta) *$
+
+> $P(o_{t+1}|h_{t+1}=j;\theta)$
+
+> $T(i, j)$
+
+> $=\sum_j P(o_{t+2}, ..., o_\tau|h_{t+1}=j;\theta) *$
+
+> $E(j, o_{t+1})$
+
+> $T(i, j)$
+
+Thus, 
+
+> $\beta(t, i) = \sum_j\beta(t+1, j) E(j, o_{t+1})T(i, j), t=\tau-1, \tau-2, ..., 1$
+
+### Termination
+
+> $P(O|\theta) = \sum_{h_1=i}\pi_{h_1}E(h_1, o_1)\beta(1, i)$
+
 
 # Problem 2: (Learning) Parameter estimation 
 
+With hidden random variables, using EM algorithm (Baum-Welch) for parameters estimation.
+
+Complete data is $(O, H)$, $Q$ function is,
+
+> $Q(\theta, \theta^{old}) = \mathbb{E}_H[\log P(O, H|\theta) | O, \theta^{old}]$
+> $=\sum_{H}\log P(O, H|\theta) P(H|O, \theta^{old})$
+
+
+> $\theta = \arg\max_{\theta} Q(\theta, \theta^{old})$
+
+For 
+> $P(O, H|\theta) = \pi_{h_1}E(h_1, o_1)T(h_1, h_2)...T(h_{T-1}, h_T)E(h_T, o_T)$
+
+Thus, 
+> $Q(\theta, \theta^{old}) = \sum_{H} \log\pi_{h_1} P(H|O, \theta^{old})$ (1)
+
+> $+\sum_{H} \sum_{t=1}^{\tau-1} \log T(h_t, h_{t+1})  P(H|O, \theta^{old})$ (2)
+
+> $+\sum_H \sum_{t=1}^\tau \log E(h_t, o_t)  P(H|O, \theta^{old})$ (3)
+
+Formula (1),(2) and (3) are only depends on $\pi$, $T$ and $E$ respectively. The three types of parameter can be optimized independently.
+
+
+### $E$
+
+> $Q_E = \sum_H \sum_{t=1}^\tau \log E(h_t, o_t)  P(H|O, \theta^{old})$
+
+Only depends on $h_t$, 
+
+> $Q_E = \sum_{h_t = i} \sum_{t=1}^\tau \log E(h_t, o_t) P(h_t=i|O, \theta^{old})$
+
+
+#### Definition of $\gamma$
+
+To solve for $E$, $P(h_t=i|O, \theta)$ must be solved.
+
+> $\gamma(t, i) = P(h_t=i|O, \theta)$
+> $=\frac{P(O, h_t=i|\theta)}{P(O|\theta)}$
+
+For
+> $P(O, h_t=i|\theta)$
+
+> $=P(o_1, ..., o_t, h_t=i, o_{t+1}, ..., o_\tau|\theta)$
+
+> $=\sum_{h_{t+1}=j} P(o_1, ..., o_t, h_t=i, h_{t+1}=j, o_{t+1}, ..., o_\tau|\theta)$
+
+> $=\sum_{j} P(o_1, ..., o_t | h_t=i, h_{t+1}=j, o_{t+1}, ..., o_\tau;\theta)*$
+
+> $P(o_{t+1}, ..., o_\tau, h_t=i, h_{t+1}=j|\theta)$
+
+> $=\sum_j P(o_1, ..., o_t|h_t=i; \theta)*$  (output independency)
+
+> $P(o_{t+1}, ..., o_\tau|h_t=i, h_{t+1}=j;\theta)*$
+
+> $P(h_{t+1}=j, h_t=i|\theta)$
+
+> $=\sum_j P(o_1, ..., o_t|h_t=i;\theta)*$
+
+> $P(o_{t+1}, ..., o_\tau|h_{t+1}=j; \theta)*$  (output independency) 
+
+> $P(h_{t+1}=j|h_t=i;\theta) P(h_t=i|\theta)$
+
+> $=\sum_j P(o_1, ..., o_t|h_t=i;\theta) P(h_t=i|\theta) *$ (**The reason $\alpha$ is defined!**)
+
+> $P(o_{t+1}, ..., o_\tau|h_t=i;\theta)$ (**The reason $\beta$ is defined!**)
+
+> $=\sum_j \alpha(t, i) *$ 
+
+> $P(o_{t+1}, ..., o_\tau|h_t=i;\theta)$ 
+
+> $=\sum_j \alpha(t, i) * \beta(t, i)$ (normalization)
+
+Thus,
+
+> $P(O, h_t=i|\theta)=\alpha(t, i) * \beta(t, i)$
+
+Hence, 
+
+> $\gamma(t, i) = P(h_t=i|O, \theta)$
+> $=\frac{P(O, h_t=i|\theta)}{P(O|\theta)}$
+> $=\frac{\alpha(t, i) * \beta(t, i)}{\sum_{h_t=i}\alpha(t, i)*\beta(t, i)}$
+
+
+### $T$
+
+> $Q_{T} = \sum_{H} \sum_{t=1}^{\tau-1} \log T(h_t, h_{t+1})  P(H|O, \theta^{old})$
+
+Only depends on $h_t$ and $h_{t+1}$, 
+
+> $Q_T = \sum_{h_t=i} \sum_{h_{t+1}=j} \sum_{t=1}^{\tau-1} \log T(h_t, h_{t+1}) P(h_t=i, h_{t+1}=j|O, \theta^{old})$ (**The reason $\xi$ is defined!**)
+
+### Definition of $\xi$
+
+Denote 
+
+> $\xi(t, i, j)=P(h_t=i, h_{t+1}=j|O, \theta)$
+
+> $=\frac{P(O, h_t=i, h_{t+1}=j|\theta)}{P(O|\theta)}$
+
+For 
+
+> $P(O, h_t=i, h_{t+1}=j|\theta)=P(o_1, ..., o_t, h_t=i, h_{t+1}=j, o_{t+1}, ..., o_\tau|\theta)$
+
+> $=\alpha(t, i)T(i, j)E(j, o_{t+1})\beta(t+1, j), t=1, 2, ..., \tau-1$
+
+Thus, 
+
+> $\xi(t, i, j) = \frac{\alpha(t, i)T(i, j)E(j, o_{t+1})\beta(t+1, j)}{\sum_{h_t=i}\sum_{h_{t+1}=j} \alpha(t, i)T(i, j)E(j, o_{t+1})\beta(t+1, j)}$
+
+
+### $Pi$
+> $Q_{\pi} =  \sum_{H} \log\pi_{h_1} P(H|O, \theta^{old})$
+
+> $s.t. \sum_{s=1}^S \pi_s=1$
+
+> $P(H|O, \theta)=\frac{P(O, H|\theta)}{P(O|\theta)} \propto P(O, H|\theta)$
+
+Note $\pi$ only depends on $h_1$, 
+
+> $Q_{\pi} = \sum_{h_1=i}\log \pi_{h_1} P(h_1=i|O; \theta^{old})$
+
+> $\sum_{h_1=i}\log \pi_{h_1}
+\frac{P(O, h_1=i|\theta^{old})}{P(O|
+theta^{old})}$
+
+> $=\sum_{h_1} \log \pi_{h_1}
+\frac{\alpha(1, h_1)}{P(O|\theta^{old})}$
+
 # Problem 3: (Decoding) Decode the hidden states 
+
+To solve, 
+
+> $\hat H = \arg\max_H P(O |H, \theta)$
+
+Let
+
+> $\phi(t, i) = \max_{h_1, h_2, ..., h_{t-1}} P(h_t=i, h_{t-1}, ..., h_1, o_t, ..., o_1|\theta)$
+
+Obviously, 
+
+> $h_T^* = \arg\max_{i} \phi(T, i) E(i, o_T)$
+
+> $\phi(t+1, j) = max_{h_1, ..., h_t}P(h_{t+1}=j, h_t, ..., h_1, o_{t+1}, o_t, ..., o_1|\theta)$
+
+> $=\max_{h_t=i}\max_{h_1, ..., h_{t-1}}P(h_t=i, h_{t-1}, ..., h_1, o_t, ..., o_1|\theta)T(i, j)E(j, o_{t+1})$
+
+> $=\max_i\phi(t, i)T(i, j)E(j, o_{t+1}), t=1, 2, ..., \tau-1$
+
+> $\phi(1, j) = P(h_1=j, o_1|\theta)$
+
+> $=P(o_1|h_1=j;\theta)P(h_1=j|\theta)$
+
+> $=E(j, o_1) \pi(j)$
+
+
+## To Decode 
+
+> $h_T^* = \arg\max_{i} \phi(T, i) E(i, o_T)$
+
+### Iteration
+
+> $h_t =\arg\max_{i} \phi(t, i) E(i, o_t) * T(i, h_{t+1}^*), t=\tau-1, ..., 1$
 
 
 
