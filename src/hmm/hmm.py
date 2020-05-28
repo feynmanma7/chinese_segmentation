@@ -49,6 +49,23 @@ class HMM():
         return np.sum(alpha[steps - 1, :])
 
 
+    def backward_evaluate(self, outputs):
+        steps = len(outputs)
+        S = len(self.states)
+        beta = np.zeros((steps, S))
+
+        beta[-1, :] = 1
+
+        for t in range(len(outputs) - 2, -1, -1):
+            o_t_plus = self.vocabs[outputs[t+1]]
+            for i in range(S):
+                beta[t, i] = np.sum(beta[t+1, :] * self.emit_p[:, o_t_plus] * self.trans_p[i, :])
+
+        o_0 = self.vocabs[outputs[0]]
+        return np.sum(self.pi[:] * self.emit_p[:, o_0] * beta[0, :])
+
+
+
     def __update_alpha(self, hiddens, outputs):
         """
         alpha_0(s) = P(o_0, h_0=s | \\theta) = pi_s * emit_p(s, o_0)
