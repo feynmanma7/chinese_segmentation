@@ -1,14 +1,7 @@
-<head>
-    <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
-    <script type="text/x-mathjax-config">
-        MathJax.Hub.Config({
-            tex2jax: {
-            skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
-            inlineMath: [['$','$']]
-            }
-        });
-    </script>
-</head>
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({tex2jax: {inlineMath:[['$','$']]}});
+</script>
+<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
 <h1>Hidden Markov Models</h1>
 
@@ -198,7 +191,7 @@ Thus,
 Formula (1),(2) and (3) are only depends on $\pi$, $T$ and $E$ respectively. The three types of parameter can be optimized independently.
 
 
-### $E$
+## $E$
 
 > $Q_E = \sum_H \sum_{t=1}^\tau \log E(h_t, o_t)  P(H|O, \theta^{old})$
 
@@ -207,7 +200,7 @@ Only depends on $h_t$,
 > $Q_E = \sum_{h_t = i} \sum_{t=1}^\tau \log E(h_t, o_t) P(h_t=i|O, \theta^{old})$
 
 
-#### Definition of $\gamma$
+### Definition of $\gamma$
 
 To solve for $E$, $P(h_t=i|O, \theta)$ must be solved.
 
@@ -258,7 +251,7 @@ Hence,
 > $=\frac{\alpha(t, i) * \beta(t, i)}{\sum_{h_t=i}\alpha(t, i)*\beta(t, i)}$
 
 
-### $T$
+## $T$
 
 > $Q_{T} = \sum_{H} \sum_{t=1}^{\tau-1} \log T(h_t, h_{t+1})  P(H|O, \theta^{old})$
 
@@ -285,7 +278,7 @@ Thus,
 > $\xi(t, i, j) = \frac{\alpha(t, i)T(i, j)E(j, o_{t+1})\beta(t+1, j)}{\sum_{h_t=i}\sum_{h_{t+1}=j} \alpha(t, i)T(i, j)E(j, o_{t+1})\beta(t+1, j)}$
 
 
-### $Pi$
+## $Pi$
 > $Q_{\pi} =  \sum_{H} \log\pi_{h_1} P(H|O, \theta^{old})$
 
 > $s.t. \sum_{s=1}^S \pi_s=1$
@@ -302,6 +295,22 @@ theta^{old})}$
 
 > $=\sum_{h_1} \log \pi_{h_1}
 \frac{\alpha(1, h_1)}{P(O|\theta^{old})}$
+
+# Problem 2: Statistic Way
+
+## $E$
+
+> $E(h_t=i, o_t=v) = \frac{count(h_t=i, o_t=v)}{count(h_t=i)}$
+
+## $T$
+
+> $T(h_t=i, h_{t+1}=j) = \frac{count(h_t=i, h_{t+1}=j)}
+{count(h_t=i)}$
+
+## $\pi$
+
+> $\pi(s) = \frac{count(h=s)}{count(h)}$
+
 
 # Problem 3: (Decoding) Decode the hidden states 
 
