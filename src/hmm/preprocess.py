@@ -2,16 +2,40 @@ import os
 import pickle
 
 
+def process_pair(pair):
+    """
+    Do the hand-dirty work to get clean word.
+    1. for word like `[公共/b`, `[` is concat with real word.
+    """
+    if pair is None or len(pair) == 0:
+        return None
+
+    word = pair.strip().split('/')[0].strip()
+    if len(word) == 0:
+        return None
+
+    if word[0] == '[':
+        return word[1:]
+    return word
+
+
 def process_file(file_path, fw):
     with open(file_path, 'r', encoding='utf-8') as f:
         print(file_path)
+
         for line in f:
+            words = []
             buf = line.split(' ')
-            fw.write(' '.join([pair.strip().split('/')[0].strip() for pair in buf]) + '\n')
+            for pair in buf:
+                word = process_pair(pair.strip())
+                if word is not None:
+                    words.append(word)
+
+            if len(words) > 0:
+                fw.write(' '.join(words) + '\n')
 
 
-
-def preprocess(input_dir, output_path):
+def get_split_words(input_dir, output_path):
     fw = open(output_path, 'w', encoding='utf-8')
 
     for dir_name in os.listdir(input_dir):
@@ -52,11 +76,12 @@ def load_vocab(vocab_path):
 
 
 if __name__ == '__main__':
-    # Get split word_idx list
     corpus_dir = '../../data/2014'
-    output_path = '../../data/people.txt'
+    processed_path = '../../data/people.txt'
+    char_vocab_path = '../../data/people_char_vocab.pkl'
 
-    preprocess(corpus_dir, output_path)
+    # Get split word list, in the format of {words words}, split by space ' '
+    get_split_words(corpus_dir, processed_path)
 
-    vocab_path = '../../data/people_char_vocab.pkl'
-    generate_char_vocab(output_path, vocab_path)
+    # get char_vocab, in the format of {char \t index(start from 0)}
+    generate_char_vocab(processed_path, char_vocab_path)

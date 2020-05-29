@@ -25,7 +25,11 @@ def lihang_example():
     b_prob = hmm.backward_evaluate(O)
     print('backward prob', b_prob)
 
-    hiddens = hmm.decode(O)
+    decode_states = {0: 'a', 1: 'b', 2: 'c'}
+    hiddens = hmm.decode(O, decode_states=decode_states)
     print('optimal hiddens', hiddens)
 
+
+if __name__ == '__main__':
+    lihang_example()
 
