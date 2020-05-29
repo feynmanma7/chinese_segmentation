@@ -1,6 +1,7 @@
 from src.hmm.hmm import HMM
 from src.hmm.preprocess import load_vocab
 
+
 def mini_generator(corpus):
     for line in corpus:
         for words in line.split(' '):
@@ -38,7 +39,6 @@ def transform(words, vocabs=None):
     outputs = [vocabs[char] for char in words]
 
     return hiddens, outputs
-
 
 
 def process_line(line, vocabs=None):

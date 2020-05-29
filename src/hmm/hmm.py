@@ -140,6 +140,7 @@ class HMM():
         for s in range(S):
             self.pi[s] = pi_count[s] / total_hidden
 
+
         # T
         for state_i, state_i_count in trans_count.items():
             state_i_total = 0
