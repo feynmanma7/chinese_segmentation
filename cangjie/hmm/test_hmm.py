@@ -1,5 +1,5 @@
-from src.hmm.hmm import HMM
-from src.hmm.preprocess import load_vocab
+from cangjie.hmm.hmm import HMM
+from cangjie.hmm.preprocess import load_vocab
 
 
 def test_hmm():
@@ -21,6 +21,7 @@ def test_hmm():
 
     sentence = '4月29日，雄浑悠长的钟声响起，关闭了近百日的武汉黄鹤楼重新开门迎客。' \
                '这钟声，传递出中华民族从磨难中奋起的昂扬斗志，彰显出伟大民族精神在新时代焕发出的熠熠光辉。'
+    sentence = 'I love you china'
     hiddens = hmm.decode(outputs=sentence, decode_states=decode_states)
     words= hmm.format_hiddens(hiddens, sentence)
     print('/ '.join(words))

@@ -1,5 +1,5 @@
 import numpy as np
-from src.hmm.hmm import HMM
+from cangjie.hmm.hmm import HMM
 
 
 def lihang_example():

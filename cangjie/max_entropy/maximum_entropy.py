@@ -190,16 +190,40 @@ class MaximumEntropy:
         return EP
 
     def _is_convergence(self, old_weights, cur_weights, threshold=1e-3):
-        diff = abs(np.sum(old_weights - cur_weights))
+        diff = abs(np.sum((old_weights - cur_weights) ** 2))
 
+        print('old_weights', old_weights)
+        print('cur_weights', cur_weights)
         if diff < threshold:
             return True
 
         return False
 
+    def predict(self, sentences=None):
+        """
+        P(y|x) = argmax_y exp{\sum_i w_i * f_i(x, y)} / Z_w
+        = argmax_y exp{\sum_i w_i * f_i(x, y}
+        """
 
-    def predict(self, words):
-        pass
+        Y = []
+        for char in sentences:
+            x_idx = self.vocab[char]
+
+            pyx = {}
+
+            for i in range(self.n_feature):
+                for (x, y), f_i_xy in self.f[i].items():
+                    if x_idx == x:
+                        if y not in pyx:
+                            pyx[y] = f_i_xy
+                        else:
+                            pyx[y] += f_i_xy
+
+            y = sorted(pyx, key=pyx.values())
+            Y.append(y)
+
+        return Y
+
 
     def train(self, features=None,
               states=None,
@@ -216,12 +240,14 @@ class MaximumEntropy:
             EP = self._compute_EP()
             old_weights = copy.deepcopy(self.weights)
 
+            print(self.EP_, EP)
+            #print(EP)
             for i, w in enumerate(self.weights):
                 self.weights[i] += 1.0 / self.M * np.log(self.EP_[i] / EP[i])
 
             diff = abs(np.sum((self.weights - old_weights)))
             print('Epoch: {:d}, weights diff: {:.4f}'.format(epoch, diff))
-            print(self.weights)
+            print(self.weights, old_weights)
             if diff < 1e-3:
                 break
 

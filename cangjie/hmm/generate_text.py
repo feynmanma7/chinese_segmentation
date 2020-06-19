@@ -1,5 +1,5 @@
-from src.hmm.hmm import HMM
-from src.hmm.preprocess import load_vocab
+from cangjie.hmm.hmm import HMM
+from cangjie.hmm.preprocess import load_vocab
 import numpy as np
 import scipy.stats as st
 #np.random.seed(7)

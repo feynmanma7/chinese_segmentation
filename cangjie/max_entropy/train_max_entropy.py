@@ -1,5 +1,5 @@
-from src.max_entropy.maximum_entropy import MaximumEntropy
-from src.hmm.preprocess import load_vocab
+from cangjie.max_entropy.maximum_entropy import MaximumEntropy
+from cangjie.hmm.preprocess import load_vocab
 
 
 def get_pre_char(arr, index):
@@ -55,3 +55,7 @@ if __name__ == '__main__':
                   vocab=vocab,
                   train_path=train_data_path,
                   epochs=epochs)
+
+    sentences = "我是中国人"
+    seg_words = max_ent.predict(sentences=sentences)
+    print(seg_words)
