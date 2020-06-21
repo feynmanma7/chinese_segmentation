@@ -3,10 +3,13 @@ import copy
 
 
 class MaximumEntropy:
-    def __init__(self, line_limit=None):
+    def __init__(self, line_limit=None, states=None):
         super(MaximumEntropy, self).__init__()
 
         self.line_limit = line_limit # for debug
+
+        self.states = states
+        self.n_state = len(self.states)
 
     def _compute_sigma(self, index=None):
         sigma = 1 / self.M * np.log()
@@ -59,15 +62,42 @@ class MaximumEntropy:
             else:
                 self.P_x[x_idx] += 1
 
+
+    def _load_features(self, feature_path=None):
+        self.features = {}
+        with open(feature_path, 'r', encoding='utf-8') as f:
+            for line in f:
+                buf = line[:-1].split('\t')
+                if len(buf) != 2:
+                    continue
+
+                feature = buf[0]
+                cnt = int(buf[1])
+
+                self.features[feature] = cnt
+
     def _init_params(self,
-                     features=None,
+                     feature_path=None,
                      states=None,
                      vocab=None,
                      input_path=None):
 
-        """
-        1. M, num_features
-        2. f_i(x, y), i=1, 2, ..., num_features, [feauture_i, {(X=x, Y=y), f_i(x, y)=f_i}]
+        u"""
+        # feature_path:  feature(string) \t cnt
+
+        # instance_path: label \t  feature_i :: feature_{i+1}
+
+        # M, num_features
+
+        # f_i(x, y) <=> (feature_i, label)
+
+        # P_(x, y) <=>  count(feature=x, label=y) / #instances
+
+        # P_(x) <=> count(feature=x) / #feature
+
+        # P(y|x) <=> P(label|feature) = exp{\sum_i w_i * f_i(x, y)} / Z_x
+
+
         3. P_(x, y)  {(X=x, Y=y)}
         4. P_(x) {X=x}
         5. P(y|x)   exp{\sum_i w_i * f_i(x, y)} / Z_w
@@ -75,9 +105,25 @@ class MaximumEntropy:
         7. EP(f_i(x, y))  \sum_{x, y} P_(x) * P(y|x) * f_i(x, y) [num_features, (x, y)]
         """
 
-        self.features = features
-        self.n_feature = len(features)
+        # === Load features.
+        self._load_features(feature_path=feature_path)
+        self.n_feature = len(self.features)
+        print('#features', self.n_feature)
+
+        # === Initialize weights, #weights = #features
         self.weights = np.zeros(self.n_feature)
+
+        # === Compute P_(X, y) <=> P_(feature, label)
+
+        # === Compute P_(X) <=> P_(feature)
+
+        # === Compute Pyx <=>
+        # === Compute EP_(f)
+
+
+
+
+
         self.vocab = vocab
         self.M = self.n_feature # f^#(x, y) = \sum_{i=1}^{n_F} f_i(x, y), max (\sum_i f_i(x, y)), num_features
 
@@ -225,16 +271,14 @@ class MaximumEntropy:
         return Y
 
 
-    def train(self, features=None,
-              states=None,
-              vocab=None,
+    def train(self,
+              instance_path=None,
+              feature_path=None,
+              model_path=None,
               epochs=None,
               train_path=None):
 
-        self._init_params(features=features,
-                          states=states,
-                          vocab=vocab,
-                          input_path=train_path)
+        self._init_params(feature_path=feature_path)
 
         for epoch in range(epochs):
             EP = self._compute_EP()
