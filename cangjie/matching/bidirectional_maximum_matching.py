@@ -1,5 +1,5 @@
-from .forward_maximum_matching import fmm
-from .backward_maximum_matching import bmm
+from cangjie.matching.forward_maximum_matching import forward_maximum_matching
+from cangjie.matching.backward_maximum_matching import backward_maximum_matching
 
 
 def count_single_char(words):
@@ -10,40 +10,30 @@ def count_single_char(words):
     return cnt
 
 
-def bi_mm(user_dict=None, sentence=None, max_char=None):
-    forward_words = fmm(user_dict=user_dict,
-                        sentence=sentence, max_char=max_char)
-    backward_words = bmm(user_dict=user_dict,
-                        sentence=sentence, max_char=max_char)
+def bidirectional_maximum_matching(word_dict=None,
+                                   max_num_char=None,
+                                   sentence=None):
 
-    bi_words = []
+    forward_words = forward_maximum_matching(word_dict=word_dict,
+                                             max_num_char=max_num_char,
+                                             sentence=sentence)
+
+    backward_words = backward_maximum_matching(word_dict=word_dict,
+                                              max_num_char=max_num_char,
+                                              sentence=sentence)
 
     """
     1. The less number of words, the better.
-    2. If eqaul number of words, the less number of single character word, 
+    2. If equal number of words, the less number of single character word, 
         the better.
     """
+
     if len(forward_words) < len(backward_words):
-        print('less #words of fmm')
-        bi_words = forward_words
+        return forward_words
     elif len(forward_words) > len(backward_words):
-        print('less #words of bmm')
-        bi_words = backward_words
+        return backward_words
     else:
-        print('equal #words of fmm&bmm', end=', ')
         if count_single_char(forward_words) < count_single_char(backward_words):
-            print('less #single_char of fmm')
-            bi_words = forward_words
+            return forward_words
         else:
-            print('less #single_char of bmm')
-            bi_words = backward_words
-
-    print('\nfmm:')
-    print('/'.join(forward_words))
-    print('\nbmm:')
-    print('/'.join(backward_words))
-    print('\nbi_mm:')
-    print('/'.join(bi_words))
-
-    return bi_words
-
+            return backward_words
