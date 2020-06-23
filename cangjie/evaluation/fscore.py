@@ -1,3 +1,4 @@
+from cangjie.utils.config import get_data_dir
 import os
 
 
@@ -80,7 +81,7 @@ def compute_fscore(y_true_path=None, y_pred_path=None):
 
 
 if __name__ == '__main__':
-    data_dir = "/Users/flyingman/Developer/github/chinese_segmentation/data"
+    data_dir = get_data_dir()
 
     method = "fmm"
 
