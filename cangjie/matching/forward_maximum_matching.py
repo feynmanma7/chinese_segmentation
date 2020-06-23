@@ -1,4 +1,5 @@
 from cangjie.utils.dictionary import load_dictionary
+from cangjie.utils.config import get_data_dir
 import os
 
 
@@ -47,7 +48,7 @@ def test_seg_sentence(word_dict=None):
 
 
 if __name__ == '__main__':
-    data_dir = "/Users/flyingman/Developer/github/chinese_segmentation/data"
+    data_dir = get_data_dir()
     dict_path = os.path.join(data_dir, "msr.dict")
 
     word_dict = load_dictionary(dict_path=dict_path)

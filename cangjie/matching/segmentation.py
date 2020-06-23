@@ -2,6 +2,7 @@ from cangjie.utils.dictionary import load_dictionary
 from cangjie.matching.forward_maximum_matching import forward_maximum_matching
 from cangjie.matching.backward_maximum_matching import backward_maximum_matching
 from cangjie.matching.bidirectional_maximum_matching import bidirectional_maximum_matching
+from cangjie.utils.config import get_data_dir
 import os
 
 
@@ -38,7 +39,7 @@ def seg_file(test_path=None, seg_path=None, word_dict=None, method=None, max_num
 
 
 if __name__ == '__main__':
-    data_dir = "/Users/flyingman/Developer/github/chinese_segmentation/data"
+    data_dir = get_data_dir()
     dict_path = os.path.join(data_dir, "msr.dict")
     test_path = os.path.join(data_dir, "msr_test.utf8")
     method = "bimm"
