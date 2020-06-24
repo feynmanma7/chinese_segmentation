@@ -5,65 +5,8 @@ import pickle
 
 
 class HMM():
-    def __init__(self, states=None,
-                 vocabs=None,
-                 pi=None,
-                 trans_p=None,
-                 emit_p=None):
+    def __init__(self):
         super(HMM, self).__init__()
-
-        self.states = states
-        self.vocabs = vocabs
-
-        self.S = len(self.states)
-        self.V = len(self.vocabs)
-
-        if pi is not None:
-            self.pi = pi
-        else:
-            self.pi = np.random.random((self.S)) # init_prob
-
-        if trans_p is not None:
-            self.trans_p = trans_p
-        else:
-            self.trans_p = np.random.random((self.S, self.S))
-
-        if emit_p is not None:
-            self.emit_p = emit_p
-        else:
-            self.emit_p = np.random.random((self.S, self.V))
-
-    def forward_evaluate(self, outputs):
-        steps = len(outputs)
-        S = len(self.states)
-        alpha = np.zeros((steps, S))
-
-        o_0 = self.vocabs[outputs[0]]
-        alpha[0, :] = self.pi[:] * self.emit_p[:, o_0]
-
-        for t in range(1, len(outputs)):
-            o_t = self.vocabs[outputs[t]]
-            for s in range(S):
-                alpha[t, s] = np.sum(alpha[t - 1, :] * self.trans_p[:, s]) * self.emit_p[s, o_t]
-
-        forward_prob = np.sum(alpha[steps - 1, :])
-        return forward_prob
-
-    def backward_evaluate(self, outputs):
-        steps = len(outputs)
-        S = len(self.states)
-        beta = np.zeros((steps, S))
-
-        beta[-1, :] = 1
-
-        for t in range(len(outputs) - 2, -1, -1):
-            o_t_plus = self.vocabs[outputs[t+1]]
-            for i in range(S):
-                beta[t, i] = np.sum(beta[t+1, :] * self.emit_p[:, o_t_plus] * self.trans_p[i, :])
-
-        o_0 = self.vocabs[outputs[0]]
-        backward_prob = np.sum(self.pi[:] * self.emit_p[:, o_0] * beta[0, :])
-        return backward_prob
 
     def decode(self, outputs, decode_states=None):
         steps = len(outputs)
@@ -93,103 +36,113 @@ class HMM():
         hiddens = [decode_states[s] for s in hiddens[::-1]]
         return hiddens
 
-    def train(self, train_generator):
-        V = len(self.vocabs)
-        S = len(self.states)
+    def train(self, train_path=None, model_path=None):
+        #states: {'B': 0, 'M': 1, 'E': 2, 'S': 3}
 
-        self.pi = np.ones((S)) * 1e-6
-        self.trans_p = np.ones((S, S)) * 1e-6
-        self.emit_p = np.ones((S, V)) * 1e-6
+        # pi: [4], num_state
+        self.pi = np.zeros((4))
 
-        pi_count = {}
-        for s in range(S):
-            pi_count[s] = 0
+        # trans_p: [4, 4], num_state * num_state
+        self.trans_p = np.zeros((4, 4))
 
-        trans_count = {} # (S, S)
-        for i in range(S):
-            s_trans_count = {}
-            for j in range(S):
-                s_trans_count[j] = 0
-            trans_count[i] = s_trans_count
+        # emit_p: [4, n_V] num_state * vocab_size
+        self.emit_p = {0: {}, 1: {}, 2: {}, 3: {}}
 
-        emit_count = {} # (S, V)
-        for s in range(S):
-            s_emit_count = {}
-            for v in range(V):
-                s_emit_count[v] = 0
-            emit_count[s] = s_emit_count
+        total_num_word = 0
 
-        for hiddens, outputs in train_generator:
-            for state in hiddens:
-                pi_count[state] += 1
+        with open(train_path, 'r', encoding='utf-8') as f:
 
-            for t in range(len(hiddens)-1):
-                state_i = hiddens[t]
-                state_j = hiddens[t+1]
-                trans_count[state_i][state_j] += 1
+            line_cnt = 0
 
-            for t in range(len(hiddens)):
-                s = hiddens[t]
-                v = outputs[t]
-                emit_count[s][v] += 1
+            for line in f.readlines():
+                line_cnt += 1
+                if line_cnt % 10000 == 0:
+                    print(line_cnt)
 
-        # pi
-        total_hidden = 0
-        for state, count in pi_count.items():
-            total_hidden += count
-        for s in range(S):
-            self.pi[s] = pi_count[s] / total_hidden
+                if len(line) == 1: #'\n'
+                    continue
 
 
-        # T
-        for state_i, state_i_count in trans_count.items():
-            state_i_total = 0
-            for state_j, state_j_count in state_i_count.items():
-                state_i_total += state_j_count
-                self.trans_p[state_i, state_j] = state_j_count
-            self.trans_p[state_i, :] /= state_i_total
+                pre_state = None
 
+                for word in line[:-1].split(' '):
+                    word = word.strip()
+                    if len(word) == 0:
+                        continue
 
-        # E
-        for state, state_count in emit_count.items():
-            total = 0
-            for v, v_count in state_count.items():
-                total += v_count
-                self.emit_p[state, v] = v_count
-            if total > 0:
-                self.emit_p[state, :] /= total
+                    if len(word) == 1:
+                        hidden = [3]
+                    else:
+                        hidden = [1] * len(word)
+                        hidden[0] = 0
+                        hidden[-1] = 2
 
-        return
+                    assert len(hidden) == len(word)
 
-    def save_model(self, model_dir=None):
-        pi_path = os.path.join(model_dir, 'pi.pkl')
-        with open(pi_path, 'wb') as fw:
-            pickle.dump(self.pi, fw)
+                    total_num_word += 1
 
-        trans_p_path = os.path.join(model_dir, 'trans_p.pkl')
-        with open(trans_p_path, 'wb') as fw:
-            pickle.dump(self.trans_p, fw)
+                    # Accumulate pi
+                    self.pi[hidden[0]] += 1
 
-        emit_p_path = os.path.join(model_dir, 'emit_p.pkl')
-        with open(emit_p_path, 'wb') as fw:
-            pickle.dump(self.emit_p, fw)
+                    # Accumulate trans_p
+                    for state in hidden:
+                        if pre_state is not None:
+                            self.trans_p[pre_state, state] += 1
+                        pre_state = state
 
-        print('Save model done!', model_dir)
+                    # Accumulate emit_p
+                    for state, char in zip(hidden, word):
+                        if char not in self.emit_p[state]:
+                            self.emit_p[state][char] = 1
+                        else:
+                            self.emit_p[state][char] += 1
 
-    def load_model(self, model_dir=None):
-        pi_path = os.path.join(model_dir, 'pi.pkl')
-        with open(pi_path, 'rb') as fr:
-            self.pi = pickle.load(fr)
+            print(line_cnt)
 
-        trans_p_path = os.path.join(model_dir, 'trans_p.pkl')
-        with open(trans_p_path, 'rb') as fr:
-            self.trans_p = pickle.load(fr)
+        assert total_num_word > 0
 
-        emit_p_path = os.path.join(model_dir, 'emit_p.pkl')
-        with open(emit_p_path, 'rb') as fr:
-            self.emit_p = pickle.load(fr)
+        # Normalize pi
+        self.pi /= total_num_word
 
-        print("Load model done!", model_dir)
+        # Normalize trans_p: [num_state, num_state]
+        self.trans_p /= np.sum(self.trans_p, axis=1).reshape((4, 1))
+
+        # Normalize emit_p: [num_state, num_char_of_this_state:{char: count}]
+        for state in self.emit_p:
+            total_num = sum(self.emit_p[state].values())
+            assert total_num > 0
+
+            for char in self.emit_p[state].keys():
+                self.emit_p[state][char] /= total_num
+
+        print(self.pi)
+        print(self.trans_p)
+        print(self.emit_p)
+
+        self.save_model(model_path=model_path)
+
+    def save_model(self, model_path=None):
+        model = {'pi': self.pi, 'tran_p': self.trans_p, 'emit_p': self.emit_p}
+        with open(model_path, 'wb') as fw:
+            pickle.dump(model, fw)
+
+        print('Save model done!', model_path)
+
+    def load_model(self, model_path=None):
+
+        with open(model_path, 'rb') as fr:
+            model = pickle.load(fr)
+
+            assert 'pi' in model
+            self.pi = model['pi']
+
+            assert 'trans_p' in model
+            self.trans_p = model['trans_p']
+
+            assert 'emit_p' in model
+            self.emit_p = model['emit_p']
+
+        print("Load model done!", model_path)
 
 
     def format_hiddens(self, hiddens, outputs):
