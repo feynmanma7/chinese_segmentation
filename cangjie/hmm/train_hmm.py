@@ -1,5 +1,7 @@
 from cangjie.hmm.hmm import HMM
 from cangjie.hmm.preprocess import load_vocab
+from cangjie.utils.config import get_data_dir, get_model_dir
+import os
 
 
 def transform_words(words, vocabs=None):
@@ -44,7 +46,7 @@ def train_generator(train_data_path, vocabs=None):
                 traceback.print_exc()
 
 
-def train_hmm():
+def train_hmm(train):
     vocab_path = '../../data/people_char_vocab.pkl'
     train_data_path = '../../data/people.txt'
     states = ['B', 'M', 'E', 'S']
@@ -60,5 +62,12 @@ def train_hmm():
 
 
 if __name__ == '__main__':
-    train_hmm()
+    data_dir = get_data_dir()
+    model_dir = get_model_dir()
+
+    train_data_path = os.path.join(data_dir, "msr_training.utf8")
+    model_path = os.path.join(model_dir, "hmm", "hmm.pkl")
+
+    hmm = HMM()
+    hmm.train(train_path=train_data_path, model_path=model_path)
 
