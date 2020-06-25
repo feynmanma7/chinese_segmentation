@@ -1,6 +1,4 @@
 import numpy as np
-np.random.seed(7)
-import os
 import pickle
 
 
@@ -8,33 +6,63 @@ class HMM():
     def __init__(self):
         super(HMM, self).__init__()
 
-    def decode(self, outputs, decode_states=None):
-        steps = len(outputs)
-        S = len(self.states)
+    def _get_emit_y_to_x(self, x=None):
+        emit_y_to_x = np.zeros(4)
+        for y in range(4):
+            if x in self.emit_p[y]:
+                emit_y_to_x[y] = self.emit_p[y][x]
 
-        phi = np.zeros((steps, S))
-        o_0 = self.vocabs[outputs[0]]
+        return emit_y_to_x
 
-        phi[0, :] = self.emit_p[:, o_0] * self.pi[:]
+    def _viterbi(self, sentence=None):
+        N = len(sentence)
+        sigma = np.zeros((N, 4)) #4: num_states
 
-        for t in range(1, len(outputs)):
-            o_t = self.vocabs[outputs[t]]
-            for j in range(S):
-                phi[t, j] = max(phi[t-1, :] * self.trans_p[:, j]) * self.emit_p[j, o_t]
+        # === Start condition for sigma
+        emit_y_to_x = self._get_emit_y_to_x(x=sentence[0])
 
-        o_T = self.vocabs[outputs[-1]]
-        h_T = np.argmax(phi[-1, :] * self.emit_p[:, o_T])
-        hiddens = [h_T]
-        h_t_plus_opm = h_T
+        # self.pi: [4, ]
+        # emit_y_to_x: [4, ]
+        sigma[0, :] = self.pi * emit_y_to_x
 
-        for t in range(len(outputs)-2, -1, -1):
-            o_t = self.vocabs[outputs[t]]
-            h_t = np.argmax(phi[t, :] * self.emit_p[:, o_t] * self.trans_p[:, h_t_plus_opm])
-            hiddens.append(h_t)
-            h_t_plus_opm = h_t
+        # === Recursion for sigma
+        for t in range(1, N):
+            emit_y_to_x = self._get_emit_y_to_x(x=sentence[t])
 
-        hiddens = [decode_states[s] for s in hiddens[::-1]]
-        return hiddens
+            # sigma: N * S
+            # sigma_{t-1}: [S, ]
+            # trans_p: [S * S]
+            # emit_y_to_x: [S, ]
+            for j in range(4):
+                trans = np.dot(sigma[t - 1, :].T, self.trans_p)
+                i = np.argmax(trans)
+                sigma[t, j] = trans[i] * emit_y_to_x[j]
+
+        # === Start for optimal node
+        opt_y_list = []
+        y = np.argmax(sigma[-1, :])
+
+        opt_y_list.append(int(y))
+
+        for t in range(N-2, -1, -1):
+            # sigma[t, :]: [S, ]
+            # self.trans_p: [S, y]
+            y = np.argmax(sigma[t, :] * self.trans_p[:, y])
+            opt_y_list.append(int(y))
+
+        return opt_y_list[::-1]
+
+    def decode(self, sentence=None):
+        if len(sentence) == 0:
+            return None
+        elif len(sentence) == 1:
+            return [sentence]
+        else:
+            y_list = self._viterbi(sentence=sentence)
+            print(y_list)
+            seg_res = self.format_hiddens(hiddens=y_list, outputs=sentence)
+            print(seg_res)
+            return seg_res
 
     def train(self, train_path=None, model_path=None):
         #states: {'B': 0, 'M': 1, 'E': 2, 'S': 3}
@@ -61,7 +89,6 @@ class HMM():
 
                 if len(line) == 1: #'\n'
                     continue
-
 
                 pre_state = None
 
@@ -115,14 +142,10 @@ class HMM():
             for char in self.emit_p[state].keys():
                 self.emit_p[state][char] /= total_num
 
-        print(self.pi)
-        print(self.trans_p)
-        print(self.emit_p)
-
         self.save_model(model_path=model_path)
 
     def save_model(self, model_path=None):
-        model = {'pi': self.pi, 'tran_p': self.trans_p, 'emit_p': self.emit_p}
+        model = {'pi': self.pi, 'trans_p': self.trans_p, 'emit_p': self.emit_p}
         with open(model_path, 'wb') as fw:
             pickle.dump(model, fw)
 
@@ -144,30 +167,15 @@ class HMM():
 
         print("Load model done!", model_path)
 
-
-    def format_hiddens(self, hiddens, outputs):
-        if len(hiddens) != len(outputs):
-            print("Not equal number of hiddens and outputs !")
-            return ""
+    def format_hiddens(self, hiddens=None, outputs=None):
+        assert len(hiddens) == len(outputs)
 
         words = []
-        cur = []
-        for state, char in zip(hiddens, outputs):
-            if state == 'S':
-                words += cur
-                words += char
-                cur = []
-            elif state == 'B':
-                cur += char
-            elif state == 'E':
-                cur += char
-                words += [''.join(cur)]
-                cur = []
-            else:
-                cur += char
+        for i, (state, char) in enumerate(zip(hiddens, outputs)):
+            words.append(char)
+            if state == 2 or state == 3:
+                if i != len(hiddens) - 1:
+                    words.append('/')
 
-        if len(cur) > 0:
-            words += cur
-
-        return words
+        return ''.join(words).split('/')
 
