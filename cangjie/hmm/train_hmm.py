@@ -1,5 +1,4 @@
 from cangjie.hmm.hmm import HMM
-from cangjie.hmm.preprocess import load_vocab
 from cangjie.utils.config import get_data_dir, get_model_dir
 import os
 

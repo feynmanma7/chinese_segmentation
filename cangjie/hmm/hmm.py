@@ -59,9 +59,7 @@ class HMM():
             return [sentence]
         else:
             y_list = self._viterbi(sentence=sentence)
-            print(y_list)
             seg_res = self.format_hiddens(hiddens=y_list, outputs=sentence)
-            print(seg_res)
             return seg_res
 
     def train(self, train_path=None, model_path=None):
