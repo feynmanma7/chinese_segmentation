@@ -83,7 +83,8 @@ def compute_fscore(y_true_path=None, y_pred_path=None):
 if __name__ == '__main__':
     data_dir = get_data_dir()
 
-    method = "fmm"
+    #method = "fmm"
+    method = "hmm"
 
     print(method)
 
