@@ -62,19 +62,20 @@ class HMM():
             seg_res = self.format_hiddens(hiddens=y_list, outputs=sentence)
             return seg_res
 
-    def train(self, train_path=None, model_path=None):
+    def train(self, train_path=None, model_path=None, is_incre_train=False):
         #states: {'B': 0, 'M': 1, 'E': 2, 'S': 3}
 
-        # pi: [4], num_state
-        self.pi = np.zeros((4))
+        if is_incre_train:
+            self.load_model(model_path=model_path)
+        else:
+            # pi: [4], num_state
+            self.pi_cnt = np.zeros((4))
 
-        # trans_p: [4, 4], num_state * num_state
-        self.trans_p = np.zeros((4, 4))
+            # trans_cnt: [4, 4], num_state * num_state
+            self.trans_cnt = np.zeros((4, 4))
 
-        # emit_p: [4, n_V] num_state * vocab_size
-        self.emit_p = {0: {}, 1: {}, 2: {}, 3: {}}
-
-        total_num_word = 0
+            # emit_cnt: [4, n_V] num_state * vocab_size
+            self.emit_cnt = {0: {}, 1: {}, 2: {}, 3: {}}
 
         with open(train_path, 'r', encoding='utf-8') as f:
 
@@ -104,64 +105,69 @@ class HMM():
 
                     assert len(hidden) == len(word)
 
-                    total_num_word += 1
-
                     # Accumulate pi
-                    self.pi[hidden[0]] += 1
+                    self.pi_cnt[hidden[0]] += 1
 
                     # Accumulate trans_p
                     for state in hidden:
                         if pre_state is not None:
-                            self.trans_p[pre_state, state] += 1
+                            self.trans_cnt[pre_state, state] += 1
                         pre_state = state
 
                     # Accumulate emit_p
                     for state, char in zip(hidden, word):
-                        if char not in self.emit_p[state]:
-                            self.emit_p[state][char] = 1
+                        if char not in self.emit_cnt[state]:
+                            self.emit_cnt[state][char] = 1
                         else:
-                            self.emit_p[state][char] += 1
+                            self.emit_cnt[state][char] += 1
 
             print(line_cnt)
-
-        assert total_num_word > 0
-
-        # Normalize pi
-        self.pi /= total_num_word
-
-        # Normalize trans_p: [num_state, num_state]
-        self.trans_p /= np.sum(self.trans_p, axis=1).reshape((4, 1))
-
-        # Normalize emit_p: [num_state, num_char_of_this_state:{char: count}]
-        for state in self.emit_p:
-            total_num = sum(self.emit_p[state].values())
-            assert total_num > 0
-
-            for char in self.emit_p[state].keys():
-                self.emit_p[state][char] /= total_num
 
         self.save_model(model_path=model_path)
 
     def save_model(self, model_path=None):
-        model = {'pi': self.pi, 'trans_p': self.trans_p, 'emit_p': self.emit_p}
+        model = {'pi_cnt': self.pi_cnt, 'trans_cnt': self.trans_cnt, 'emit_cnt': self.emit_cnt}
         with open(model_path, 'wb') as fw:
             pickle.dump(model, fw)
 
         print('Save model done!', model_path)
 
-    def load_model(self, model_path=None):
+    def load_model(self, model_path=None, is_training=True):
 
         with open(model_path, 'rb') as fr:
+            # === Load model, {key: key_count}
+
             model = pickle.load(fr)
 
-            assert 'pi' in model
-            self.pi = model['pi']
+            assert 'pi_cnt' in model
+            self.pi_cnt = model['pi_cnt']
 
-            assert 'trans_p' in model
-            self.trans_p = model['trans_p']
+            assert 'trans_cnt' in model
+            self.trans_cnt = model['trans_cnt']
 
-            assert 'emit_p' in model
-            self.emit_p = model['emit_p']
+            assert 'emit_cnt' in model
+            self.emit_cnt = model['emit_cnt']
+
+        if is_training is False:
+            # === Compute probability
+
+            # Compute pi
+            total_num_word = sum(self.pi_cnt)
+            assert total_num_word > 0
+            self.pi = self.pi_cnt / total_num_word
+
+            # Compute trans_p: [num_state, num_state]
+            self.trans_p = self.trans_cnt / np.sum(self.trans_cnt, axis=1).reshape((4, 1))
+
+            # Compute emit_p: [num_state, num_char_of_this_state:{char: count}]
+            self.emit_p = {0: {}, 1: {}, 2: {}, 3: {}}
+
+            for state in self.emit_cnt:
+                total_num = sum(self.emit_cnt[state].values())
+                assert total_num > 0
+
+                for char in self.emit_cnt[state].keys():
+                    self.emit_p[state][char] = self.emit_cnt[state][char] / total_num
 
         print("Load model done!", model_path)
 

@@ -34,9 +34,10 @@ if __name__ == "__main__":
     test_result_path = os.path.join(data_dir, "msr_test_hmm.utf8")
 
     hmm = HMM()
-    hmm.load_model(model_path=model_path)
+    hmm.load_model(model_path=model_path, is_training=False)
 
-    #seg_on_sentence(hmm, sentence='黑夜给了我黑色的眼睛，我却用它寻找光明。')
+    seg_res = seg_on_sentence(hmm, sentence='黑夜给了我黑色的眼睛，我却用它寻找光明。')
+    print("/".join(seg_res))
     seg_on_file(model=hmm, test_path=test_path, test_result_path=test_result_path)
 
     print("Segmentation done!", test_result_path)
