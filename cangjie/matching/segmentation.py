@@ -6,7 +6,26 @@ from cangjie.utils.config import get_data_dir
 import os
 
 
-def seg_file(test_path=None, seg_path=None, word_dict=None, method=None, max_num_char=None):
+def seg_on_sentence(sentence=None, word_dict=None, method=None, max_num_char=None):
+    if method == "bmm":
+        seg_func = backward_maximum_matching
+    elif method == "fmm":
+        seg_func = forward_maximum_matching
+    elif method == "bimm":
+        seg_func = bidirectional_maximum_matching
+    else:
+        return False
+
+    seg_words = seg_func(
+        word_dict=word_dict,
+        max_num_char=max_num_char,
+        sentence=sentence)
+
+    return seg_words
+
+
+
+def seg_on_file(test_path=None, seg_path=None, word_dict=None, method=None, max_num_char=None):
     fw = open(seg_path, 'w', encoding='utf-8')
 
     line_cnt = 0
@@ -50,10 +69,10 @@ if __name__ == '__main__':
     word_dict = load_dictionary(dict_path=dict_path)
     print("Total number of words is: %d\n" % (len(word_dict)))
 
-    seg_file(word_dict=word_dict,
-             test_path=test_path,
-             seg_path=test_result_path,
-             method=method,
-             max_num_char=max_num_char)
+    seg_on_file(word_dict=word_dict,
+                test_path=test_path,
+                seg_path=test_result_path,
+                method=method,
+                max_num_char=max_num_char)
 
     print(test_result_path)

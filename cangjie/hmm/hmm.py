@@ -1,3 +1,4 @@
+from cangjie.matching.segmentation import seg_on_sentence
 import numpy as np
 import pickle
 
@@ -52,7 +53,11 @@ class HMM():
 
         return opt_y_list[::-1]
 
-    def decode(self, sentence=None):
+    def decode(self, sentence=None,
+               is_use_matching=None,
+               matching_method=None,
+               max_num_char=None,
+               word_dict=None):
         if len(sentence) == 0:
             return None
         elif len(sentence) == 1:
@@ -60,6 +65,24 @@ class HMM():
         else:
             y_list = self._viterbi(sentence=sentence)
             seg_res = self.format_hiddens(hiddens=y_list, outputs=sentence)
+
+            if is_use_matching:
+                matching_seg_res = []
+                for word in seg_res:
+                    if len(word) >= max_num_char:
+                        seg_res_list = seg_on_sentence(sentence=word,
+                                                       word_dict=word_dict,
+                                                       method=matching_method,
+                                                       max_num_char=max_num_char)
+
+                        for seg_word in seg_res_list:
+                            matching_seg_res.append(seg_word)
+
+                    else:
+                        matching_seg_res.append(word)
+
+                return matching_seg_res
+
             return seg_res
 
     def train(self, train_path=None, model_path=None, is_incre_train=False):
