@@ -65,9 +65,9 @@ def generate_text():
     hmm = HMM(vocabs=vocabs, states=states)
     hmm.load_model(model_dir=model_dir)
 
-    pi = hmm.pi
-    tran_p = hmm.trans_p # [S, S]
-    emit_p = hmm.emit_p  # [S, V]
+    pi = hmm.pi_cnt
+    tran_p = hmm.trans_cnt # [S, S]
+    emit_p = hmm.emit_cnt  # [S, V]
 
     # [S, S]
     trans_cdfs = [compute_cdf(tran_p[s, :]) for s in range(tran_p.shape[0])]
