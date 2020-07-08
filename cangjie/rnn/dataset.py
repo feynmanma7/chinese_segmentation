@@ -12,7 +12,7 @@ def dataset_generator(data_path=None,
                       batch_size=16,
                       steps=10,
                       pad_index=0,
-                      word2id_dict=None):
+                      char2id_dict=None):
     # input_data: char_idx :: char_idx :: char_idx \t state_idx \s state_idx \s state_idx
     def generator():
         with open(data_path, 'r', encoding='utf-8') as f:
@@ -24,11 +24,13 @@ def dataset_generator(data_path=None,
                 if len(chars) != len(states):
                     continue
 
-                #assert len(chars) == len(states)
-
                 for i in range(len(chars) // steps + 1):
-                    sub_chars = [word2id_dict[char] for char
-                                 in chars[i*steps: min((i+1)*steps, len(chars))]]
+                    sub_chars = []
+                    for char in chars[i*steps: min((i+1)*steps, len(chars))]:
+                        if char in char2id_dict:
+                            sub_chars.append(char2id_dict[char])
+                        else:
+                            sub_chars.append(1) # 1 for `unk`, 0 for `pad`
                     sub_states = states[i*steps: min((i+1)*steps, len(chars))]
 
                     inputs = sub_chars if len(sub_chars) == steps \
@@ -53,27 +55,27 @@ def get_dataset(data_path=None,
                 batch_size=16,
                 steps=10,
                 pad_index=0,
-                word2id_dict=None):
+                char2id_dict=None):
     return dataset_generator(data_path=data_path,
                              epochs=epochs,
                              shuffle_buffer_size=shuffle_buffer_size,
                              batch_size=batch_size,
                              steps=steps,
                              pad_index=pad_index,
-                             word2id_dict=word2id_dict)
+                             char2id_dict=char2id_dict)
 
 
 if __name__ == "__main__":
     train_path = os.path.join(get_data_dir(), "msr_training_label.utf8")
-    word2id_dict_path = os.path.join(get_data_dir(), "msr_training_rnn_dict.pkl")
+    char2id_dict_path = os.path.join(get_data_dir(), "msr_training_char2id_dict.pkl")
 
-    word2id_dict = load_dictionary(dict_path=word2id_dict_path)
-    print("#word2id_dict = %d" % len(word2id_dict))
+    char2id_dict = load_dictionary(dict_path=char2id_dict_path)
+    print("#char2id_dict = %d" % len(char2id_dict))
 
     train_dataset = get_dataset(data_path=train_path,
                                 batch_size=4,
                                 steps=10,
-                                word2id_dict=word2id_dict)
+                                char2id_dict=char2id_dict)
 
     # inputs: [batch_size, steps]  \in [0, 1, 2, ..., vocab_size]
     # outputs: [batch_size, steps] \in [0, 1, 2, 3, 4]

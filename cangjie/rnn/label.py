@@ -3,7 +3,7 @@ from cangjie.rnn.dictionary import load_dictionary
 import os
 
 
-def get_label(input_path=None, label_path=None, char2id_dict=None):
+def generate_label(input_path=None, label_path=None):
     # input_data: word \s word \s
     # label:  char,char,char  \t label_index""label_index""label_index
     # States = {'pad': 0, 'B': 1, 'M': 2, 'E': 3, 'S': 4}
@@ -47,4 +47,4 @@ if __name__ == '__main__':
     char2id_dict = load_dictionary(dict_path=char2id_dict_path)
     print("#char2id_dict = %d" % len(char2id_dict))
 
-    get_label(input_path=data_path, label_path=label_path, char2id_dict=char2id_dict)
+    generate_label(input_path=data_path, label_path=label_path)

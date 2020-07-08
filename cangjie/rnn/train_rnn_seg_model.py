@@ -38,16 +38,16 @@ def train_rnn_seg():
                                 shuffle_buffer_size=shuffle_buffer_size,
                                 batch_size=batch_size,
                                 steps=rnn_steps,
-                                word2id_dict=word2id_dict,
+                                char2id_dict=word2id_dict,
                                 pad_index=pad_index)
 
     val_dataset = get_dataset(data_path=val_path,
-                            epochs=epochs,
-                            shuffle_buffer_size=shuffle_buffer_size,
-                            batch_size=batch_size,
-                            steps=rnn_steps,
-                            word2id_dict=word2id_dict,
-                            pad_index=pad_index)
+                              epochs=epochs,
+                              shuffle_buffer_size=shuffle_buffer_size,
+                              batch_size=batch_size,
+                              steps=rnn_steps,
+                              char2id_dict=word2id_dict,
+                              pad_index=pad_index)
 
     rnnseg = RNNSeg(vocab_size=vocab_size, embedding_dim=embedding_dim, rnn_units=rnn_units)
 
