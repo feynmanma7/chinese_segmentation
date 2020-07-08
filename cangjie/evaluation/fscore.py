@@ -84,7 +84,8 @@ if __name__ == '__main__':
     data_dir = get_data_dir()
 
     #method = "fmm"
-    method = "hmm"
+    #method = "hmm"
+    method = "rnn"
 
     print(method)
 

@@ -9,7 +9,8 @@ class RNNSeg(tf.keras.Model):
                  rnn_units=8):
         super(RNNSeg, self).__init__()
 
-        self.embedding_layer = Embedding(input_dim=vocab_size+1,
+        # 0 for `pad`, 1 for `unk`
+        self.embedding_layer = Embedding(input_dim=vocab_size+2,
                                          output_dim=embedding_dim)
 
         # merge_mode: sum, mul, concat, ave. Default is `concat`.
@@ -36,11 +37,14 @@ class RNNSeg(tf.keras.Model):
 def test_rnnseg_once(rnnseg=None, vocab_size=10):
     batch_size = 2
     steps = 5
-    #vocab_size = 10
 
-    #rnnseg = RNNSeg(vocab_size=vocab_size)
-
-    inputs = tf.random.uniform((batch_size, steps), minval=0, maxval=vocab_size+1)
+    # 0 for `pad`, 1 for `unk`
+    inputs = tf.random.uniform((batch_size, steps), minval=0, maxval=vocab_size+2)
+    """
+    import numpy as np
+    inputs = np.random.randint(low=0, high=vocab_size+2, size=steps*batch_size)\
+        .reshape((batch_size, steps))
+    """
     print('inputs', inputs.shape)
 
     softmax = rnnseg(inputs)
@@ -53,3 +57,4 @@ if __name__ == '__main__':
     vocab_size = 10
     rnnseg = RNNSeg(vocab_size=vocab_size)
     test_rnnseg_once(rnnseg=rnnseg)
+

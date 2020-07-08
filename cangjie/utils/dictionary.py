@@ -1,11 +1,12 @@
 import os
 import pickle
+from cangjie.utils.config import get_data_dir
 
 
 def load_dictionary(dict_path=None):
     with open(dict_path, 'rb') as fr:
-        word_dict = pickle.load(fr)
-        return word_dict
+        my_dict = pickle.load(fr)
+        return my_dict
 
     return None
 
@@ -36,7 +37,7 @@ def genearte_dictionary(train_path=None, dict_path=None):
 
 
 if __name__ == "__main__":
-    data_dir = "/Users/flyingman/Developer/github/chinese_segmentation/data"
+    data_dir = get_data_dir()
     train_path = os.path.join(data_dir, "msr_training.utf8")
     dict_path = os.path.join(data_dir, "msr.dict")
 
