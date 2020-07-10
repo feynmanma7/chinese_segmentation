@@ -261,7 +261,7 @@ For the Chinese segmentation problem, given output sequences $O=(o_1, o_2, ..., 
 
 the hidden states $I=(i_1, i_2, ..., i_\tau)$ is to be estimated. 
 
-The transist probability $P(h_t|h_{t-1}, o_t)$ is learned.
+The transit probability $P(h_t|h_{t-1}, o_t)$ is learned.
 
 Let $\sigma_t(s_t)$ be maximum probability among all of the paths with the $t$-th hidden state is $s_t$.
 

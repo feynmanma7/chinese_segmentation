@@ -1,5 +1,5 @@
 import os
-from time_util import print_lasts_time
+from utils.time_util import print_lasts_time
 import pickle
 
 

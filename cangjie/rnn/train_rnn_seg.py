@@ -12,8 +12,8 @@ import os
 def train_rnn_seg():
     vocab_size = 3954 # count > min_char_count = 5
     num_states = 4
-    total_num_train = 69000
-    total_num_val = 17300
+    total_num_train = 69000 # num_lines of msr_rnn_train.utf8
+    total_num_val = 17300 # num_lines of msr_rnn_val.utf8
 
     epochs = 100
     shuffle_buffer_size = 1024 * 2
@@ -33,6 +33,10 @@ def train_rnn_seg():
 
     char2id_dict = load_dictionary(dict_path=char2id_dict_path)
     print("#char2id_dict = %d" % len(char2id_dict))
+
+    for char, index in char2id_dict.items():
+        if index >= 3956:
+            print(char, index)
 
     train_dataset = get_dataset(data_path=train_path,
                                 epochs=epochs,
