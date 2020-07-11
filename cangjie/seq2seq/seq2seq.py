@@ -58,7 +58,15 @@ class Decoder(tf.keras.Model):
         return softmax, hidden_state
 
 
-def test_seq2seq_once():
+def test_seq2seq_once(encoder=None, decoder=None, inputs=None, targets=None):
+    encoder_hidden_state = encoder(inputs=inputs)
+    print('encoder_hidden_state', encoder_hidden_state.shape)
+
+    softmax, hidden_state = decoder(targets=targets, pre_hidden_state=encoder_hidden_state)
+    print('softmax', softmax.shape, 'decoder_hidden_state', hidden_state.shape)
+
+
+if __name__ == "__main__":
     batch_size = 2
     rnn_steps = 5
     vocab_size = 10
@@ -67,22 +75,14 @@ def test_seq2seq_once():
     rnn_units = 8
 
     inputs = tf.random.uniform((batch_size, rnn_steps), minval=0, maxval=vocab_size+2, dtype=tf.int32)
-    targets = tf.random.uniform((batch_size, rnn_steps), minval=0, maxval=num_states + 1, dtype=tf.int32)
+    targets = tf.random.uniform((batch_size, rnn_steps), minval=0, maxval=num_states+1, dtype=tf.int32)
 
     encoder = Encoder(vocab_size=vocab_size,
                       embedding_dim=embedding_dim,
                       rnn_units=rnn_units)
 
-    encoder_hidden_state = encoder(inputs)
-    print('encoder_hidden_state', encoder_hidden_state.shape)
-
     decoder = Decoder(num_states=num_states,
                       embedding_dim=embedding_dim,
                       rnn_units=rnn_units)
 
-    softmax, hidden_state = decoder(targets=targets, pre_hidden_state=encoder_hidden_state)
-    print('softmax', softmax.shape, 'decoder_hidden_state', hidden_state.shape)
-
-
-if __name__ == "__main__":
-    test_seq2seq_once()
+    test_seq2seq_once(encoder=encoder, decoder=decoder, inputs=inputs, targets=targets)
