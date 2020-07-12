@@ -17,7 +17,7 @@ def mask_sparse_cross_entropy(y_true=None, y_pred=None, mask=0):
     loss = tf.multiply(loss, masks)
 
     # reduce_mean: shape=()
-    loss = tf.reduce_mean(loss)
+    loss = tf.cast(tf.reduce_mean(loss), tf.float32)
 
     return loss
 

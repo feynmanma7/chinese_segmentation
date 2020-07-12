@@ -24,7 +24,6 @@ def seg_on_sentence(sentence=None, word_dict=None, method=None, max_num_char=Non
     return seg_words
 
 
-
 def seg_on_file(test_path=None, seg_path=None, word_dict=None, method=None, max_num_char=None):
     fw = open(seg_path, 'w', encoding='utf-8')
 
