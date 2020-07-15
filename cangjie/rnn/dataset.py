@@ -6,6 +6,21 @@ import numpy as np
 import os
 
 
+def generate_seg_seq(char_list=None, separator_dict=None):
+    seq = []
+
+    for char in char_list:
+        if char in separator_dict:
+            sub_label = 4 # 4 for `S`ingle
+            yield seq, sub_label
+            seq = []
+        else:
+            seq.append(char)
+
+    if len(seq) > 0:
+        yield seq, None
+
+
 def dataset_generator(data_path=None,
                       epochs=10,
                       shuffle_buffer_size=1024,

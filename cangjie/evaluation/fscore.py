@@ -85,8 +85,9 @@ if __name__ == '__main__':
 
     #method = "bimm"
     #method = "hmm"
-    #method = "rnn"
-    method = "jieba"
+    method = "rnn"
+    #method = "jieba"
+    #method = "seq2seq"
 
     print(method)
 

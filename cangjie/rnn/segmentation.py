@@ -3,26 +3,51 @@ from cangjie.rnn.rnn import RNNSeg, test_rnnseg_once
 from cangjie.utils.losses import mask_sparse_cross_entropy
 from cangjie.utils.dictionary import load_dictionary
 from cangjie.utils.preprocess import load_separator_dict
+from cangjie.rnn.dataset import generate_seg_seq
 import tensorflow as tf
+tf.random.set_seed(7)
 import numpy as np
 import os, time
 
 
-def generate_seq(char_list=None, rnn_steps=None, separator_dict=None):
-    seq = []
-    for char in char_list:
-        if char in separator_dict:
-            sub_label = 4 # 4 for `S`ingle
-            yield seq, sub_label
-            seq = []
-        else:
-            if len(seq) == rnn_steps:
-                yield seq, None
-                seq = []
-            else:
-                seq.append(char)
+def model_predict(model=None, char_list=None, char2id_dict=None, separator_dict=None):
+    # Test one sequence once.
 
-    yield seq, None
+    labels = []
+
+    # If len(seq) < rnn_steps, add `pad`; Else truncate by rnn_steps.
+    for char_seq_list, sub_label in generate_seg_seq(char_list=char_list,
+                                                     separator_dict=separator_dict):
+
+        if char_seq_list is None or len(char_seq_list) == 0:
+            if sub_label is not None:
+                labels.append(sub_label)
+            continue
+
+        char_index_list = []
+        for char in char_seq_list:
+            if char in char2id_dict:
+                char_index_list.append(char2id_dict[char])
+            else:
+                char_index_list.append(1)  # 1 for `unk`
+
+        char_index = np.array(char_index_list).reshape((1, len(char_index_list)))
+
+        # [1, steps, 5]
+        sub_probs = model(inputs=char_index)
+
+        # [1, steps]
+        sub_labels = tf.argmax(sub_probs, axis=2)
+
+        # [steps, ]
+        sub_labels = list(tf.squeeze(sub_labels, axis=0).numpy())
+
+        if sub_label is not None:
+            sub_labels.append(sub_label)
+
+        labels.extend(sub_labels)
+
+    return labels
 
 
 def segmentation():
@@ -30,7 +55,7 @@ def segmentation():
     embedding_dim = 64
     rnn_units = 32
     pad_index = 0  # pad_index, to mask in loss
-    rnn_steps = 30
+    rnn_steps = 30 # is not needed in test
 
     test_path = os.path.join(get_data_dir(), "msr_test.utf8")
     seg_path = os.path.join(get_data_dir(), "msr_test_rnn.utf8")
@@ -46,14 +71,13 @@ def segmentation():
                    loss=mask_sparse_cross_entropy,
                    metrics=['acc'])
 
+    # === Load weights.
     checkpoint_dir = os.path.join(get_model_dir(), "rnn_model")
     checkpoint = tf.train.latest_checkpoint(checkpoint_dir=checkpoint_dir)
     rnnseg.load_weights(checkpoint)
 
     # === Run once, to load weights of checkpoint.
     test_rnnseg_once(rnnseg=rnnseg, vocab_size=vocab_size)
-
-    #print(rnnseg.embedding_layer.get_weights())
 
     # Load separator_dict
     separator_dict = load_separator_dict()
@@ -63,55 +87,22 @@ def segmentation():
     with open(test_path, 'r', encoding='utf-8') as f:
 
         for line in f:
-            buf = line[:-1]
-            labels = []
+            labels = model_predict(model=rnnseg,
+                                   char_list=line[:-1],
+                                   char2id_dict=char2id_dict,
+                                   separator_dict=separator_dict)
 
-            # Test one sequence once.
-            # If len(seq) < rnn_steps, add `pad`; Else truncate by rnn_steps.
-            for char_seq_list, sub_label in generate_seq(char_list=buf,
-                                         rnn_steps=rnn_steps,
-                                         separator_dict=separator_dict):
-
-                if char_seq_list is None or len(char_seq_list) == 0:
-                    if sub_label is not None:
-                        labels.append(sub_label)
-                    continue
-
-                char_index_list = []
-                for char in char_seq_list:
-                    if char in char2id_dict:
-                        char_index_list.append(char2id_dict[char])
-                    else:
-                        char_index_list.append(1) # 1 for `unk`
-
-                if len(char_index_list) < rnn_steps:
-                    char_index_list += [0] * (rnn_steps - len(char_index_list))
-
-                char_index = np.array(char_index_list).reshape((1, rnn_steps))
-                #print(char_index.shape)
-
-                # [1, steps, 5]
-                sub_probs = rnnseg.predict(char_index)
-
-                # [1, steps]
-                sub_labels = tf.argmax(sub_probs, axis=2)
-                sub_labels = list(tf.reshape(sub_labels, shape=(rnn_steps, )).numpy())[:len(char_seq_list)]
-
-                if sub_label is not None:
-                    sub_labels.append(sub_label)
-
-                labels.extend(sub_labels)
-
-            if len(buf) != len(labels):
-                print(buf, labels)
-                print(len(buf), len(labels))
+            if len(line[:-1]) != len(labels):
+                print("Wrong")
+                print(line[:-1], '\n', labels)
+                print(len(line[:-1]), len(labels))
                 break
 
             # {0: pad, 1: B, 2: M, 3: E, 4: S}
             words = []
             word = []
-            for i, label in zip(range(len(buf)), labels):
-                word.append(buf[i])
+            for i, label in zip(range(len(line)-1), labels):
+                word.append(line[i])
                 if label == 3 or label == 4:
                     words.append("".join(word))
                     word = []

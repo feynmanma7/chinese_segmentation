@@ -1,5 +1,7 @@
 import tensorflow as tf
+tf.random.set_seed(7)
 from tensorflow.keras.layers import Embedding, Dense, Bidirectional, LSTM
+from tensorflow.keras.utils import plot_model
 
 
 class RNNSeg(tf.keras.Model):
@@ -36,7 +38,7 @@ class RNNSeg(tf.keras.Model):
 
 def test_rnnseg_once(rnnseg=None, vocab_size=10):
     batch_size = 2
-    steps = 5
+    steps = 100
 
     # 0 for `pad`, 1 for `unk`
     inputs = tf.random.uniform((batch_size, steps), minval=0, maxval=vocab_size+2)
@@ -56,5 +58,11 @@ def test_rnnseg_once(rnnseg=None, vocab_size=10):
 if __name__ == '__main__':
     vocab_size = 10
     rnnseg = RNNSeg(vocab_size=vocab_size)
+    rnnseg.compile(optimizer=tf.optimizers.Adam(0.001), loss=tf.losses.SparseCategoricalCrossentropy)
     test_rnnseg_once(rnnseg=rnnseg)
+
+    from cangjie.utils.config import get_model_dir
+    import os
+    model_img_path = os.path.join(get_model_dir(), "images", "rnn.png")
+    plot_model(rnnseg, to_file=model_img_path, show_shapes=True)
 

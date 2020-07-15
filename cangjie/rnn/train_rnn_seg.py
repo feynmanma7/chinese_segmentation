@@ -34,10 +34,7 @@ def train_rnn_seg():
     char2id_dict = load_dictionary(dict_path=char2id_dict_path)
     print("#char2id_dict = %d" % len(char2id_dict))
 
-    for char, index in char2id_dict.items():
-        if index >= 3956:
-            print(char, index)
-
+    # === tf.data.Dataset
     train_dataset = get_dataset(data_path=train_path,
                                 epochs=epochs,
                                 shuffle_buffer_size=shuffle_buffer_size,
@@ -54,13 +51,16 @@ def train_rnn_seg():
                               char2id_dict=char2id_dict,
                               pad_index=pad_index)
 
+    # === model
     rnnseg = RNNSeg(vocab_size=vocab_size, embedding_dim=embedding_dim, rnn_units=rnn_units)
+    # optimizer
     optimizer = tf.keras.optimizers.Adam(0.001)
 
     rnnseg.compile(optimizer=optimizer,
                    loss=mask_sparse_cross_entropy,
                    metrics=['acc'])
 
+    # callbacks
     callbacks = []
 
     early_stopping_cb = EarlyStopping(monitor='val_loss',
@@ -76,6 +76,7 @@ def train_rnn_seg():
                                     save_best_only=True)
     callbacks.append(checkpoint_cb)
 
+    # === Train
     history = rnnseg.fit(train_dataset,
                batch_size=batch_size,
                epochs=epochs,

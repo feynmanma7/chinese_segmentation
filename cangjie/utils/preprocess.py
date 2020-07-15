@@ -21,3 +21,5 @@ def load_separator_dict():
         sep_dict[char] = True
 
     return sep_dict
+
+
