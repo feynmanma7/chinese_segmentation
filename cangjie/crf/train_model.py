@@ -1,15 +1,16 @@
 from cangjie.utils.config import get_data_dir, get_model_dir, get_log_dir
 from cangjie.rnn.dataset import get_dataset
 from cangjie.rnn.dictionary import load_dictionary
-from cangjie.rnn.rnn import RNNSeg
+from cangjie.crf.rnn_crf import BiRNNCRF
 from cangjie.utils.losses import mask_sparse_cross_entropy
+from tf2crf.crf import CRF
 import tensorflow as tf
 from tensorflow.keras.callbacks import EarlyStopping, TensorBoard, ModelCheckpoint
 import time
 import os
 
 
-def train_rnn_seg():
+def train_model():
     vocab_size = 3954 # count > min_char_count = 5
     num_states = 4
     total_num_train = 69000 # num_lines of msr_rnn_train.utf8
@@ -52,13 +53,17 @@ def train_rnn_seg():
                               pad_index=pad_index)
 
     # === model
-    rnnseg = RNNSeg(vocab_size=vocab_size, embedding_dim=embedding_dim, rnn_units=rnn_units)
+    model = BiRNNCRF(vocab_size=vocab_size, embedding_dim=embedding_dim, rnn_units=rnn_units)
     # optimizer
     optimizer = tf.keras.optimizers.Adam(0.001)
 
-    rnnseg.compile(optimizer=optimizer,
-                   loss=mask_sparse_cross_entropy,
-                   metrics=['acc'])
+    crf = model.crf_layer
+    model.compile(optimizer=optimizer,
+                   #loss=mask_sparse_cross_entropy,
+                  loss=crf.loss,
+                   #metrics=['acc'])
+                  metrics=[crf.accuracy]
+                  )
 
     # callbacks
     callbacks = []
@@ -77,7 +82,7 @@ def train_rnn_seg():
     callbacks.append(checkpoint_cb)
 
     # === Train
-    history = rnnseg.fit(train_dataset,
+    history = model.fit(train_dataset,
                batch_size=batch_size,
                epochs=epochs,
                steps_per_epoch=num_train_batch,
@@ -85,14 +90,14 @@ def train_rnn_seg():
                validation_steps=num_val_batch,
                callbacks=callbacks)
 
-    print(rnnseg.summary())
+    print(model.summary())
 
     return True
 
 
 if __name__ == "__main__":
     start = time.time()
-    train_rnn_seg()
+    train_model()
     end = time.time()
     last = end - start
     print("\nTrain done! Lasts: %.2fs" % last)

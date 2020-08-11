@@ -1,5 +1,5 @@
 from cangjie.utils.config import get_model_dir, get_data_dir
-from cangjie.rnn.rnn import RNNSeg, test_rnnseg_once
+from cangjie.attention.birnnattention import BiRNNAttention, test_model_once
 from cangjie.utils.losses import mask_sparse_cross_entropy
 from cangjie.utils.dictionary import load_dictionary
 from cangjie.utils.preprocess import load_separator_dict
@@ -57,27 +57,39 @@ def segmentation():
     pad_index = 0  # pad_index, to mask in loss
     rnn_steps = 30 # is not needed in test
 
+    model_name = "birnn_attention"
+
     test_path = os.path.join(get_data_dir(), "msr_test.utf8")
-    seg_path = os.path.join(get_data_dir(), "msr_test_rnn.utf8")
+    seg_path = os.path.join(get_data_dir(), "msr_test_" + model_name + ".utf8")
     char2id_dict_path = os.path.join(get_data_dir(), "msr_training_char2id_dict.pkl")
     char2id_dict = load_dictionary(dict_path=char2id_dict_path)
     print("#char2id_dict=%d" % len(char2id_dict))
 
     # === Build and compile model.
-    rnnseg = RNNSeg(vocab_size=vocab_size, embedding_dim=embedding_dim, rnn_units=rnn_units)
+    model = BiRNNAttention(vocab_size=vocab_size, embedding_dim=embedding_dim, rnn_units=rnn_units)
     optimizer = tf.keras.optimizers.Adam(0.001)
 
-    rnnseg.compile(optimizer=optimizer,
+    """
+    crf = model.crf_layer
+    model.compile(optimizer=optimizer,
+                  loss=crf.loss,
+                  metrics=[crf.accuracy]
+                  )
+    """
+
+
+    model.compile(optimizer=optimizer,
                    loss=mask_sparse_cross_entropy,
                    metrics=['acc'])
 
+
     # === Load weights.
-    checkpoint_dir = os.path.join(get_model_dir(), "rnn_model")
+    checkpoint_dir = os.path.join(get_model_dir(), model_name + "_model")
     checkpoint = tf.train.latest_checkpoint(checkpoint_dir=checkpoint_dir)
-    rnnseg.load_weights(checkpoint)
+    model.load_weights(checkpoint)
 
     # === Run once, to load weights of checkpoint.
-    test_rnnseg_once(rnnseg=rnnseg, vocab_size=vocab_size)
+    test_model_once(model=model, vocab_size=vocab_size)
 
     # Load separator_dict
     separator_dict = load_separator_dict()
@@ -86,8 +98,10 @@ def segmentation():
     fw = open(seg_path, 'w', encoding='utf-8')
     with open(test_path, 'r', encoding='utf-8') as f:
 
+        line_cnt = 0
         for line in f:
-            labels = model_predict(model=rnnseg,
+
+            labels = model_predict(model=model,
                                    char_list=line[:-1],
                                    char2id_dict=char2id_dict,
                                    separator_dict=separator_dict)
@@ -110,6 +124,11 @@ def segmentation():
                 words.append("".join(word))
             fw.write(" ".join(words) + '\n')
 
+            line_cnt += 1
+            if line_cnt % 100 == 0:
+                print(line_cnt)
+
+        print(line_cnt)
     fw.close()
 
 

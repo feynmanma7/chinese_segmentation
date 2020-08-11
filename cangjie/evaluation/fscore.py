@@ -73,6 +73,8 @@ def compute_fscore(y_true_path=None, y_pred_path=None):
     print("precision\trecall\tf1_score")
     print("%.4f\t\t%.4f\t%.4f" %
           (precision, recall, f1_score))
+    print("|%.4f|%.4f|%.4f|" %
+          (precision, recall, f1_score))
 
     fr_true.close()
     fr_pred.close()
@@ -86,7 +88,10 @@ if __name__ == '__main__':
     #method = "bimm"
     #method = "hmm"
     #method = "rnn"
-    method = "jieba"
+    #method = "jieba"
+    #method = "seq2seq"
+    #method = "birnn_crf"
+    method = "birnn_attention"
 
     print(method)
 

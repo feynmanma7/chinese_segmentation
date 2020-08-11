@@ -134,7 +134,6 @@ def train_seq2seq():
                   % (epoch + 1, train_loss, val_loss))
             checkpoint.save(file_prefix=checkpoint_prefix)
 
-
     print("Training done! min_val_loss=%.4f, opt_epoch=%d"
           % (min_val_loss, opt_epoch), end=" ")
     end = time.time()

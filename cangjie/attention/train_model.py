@@ -1,7 +1,7 @@
 from cangjie.utils.config import get_data_dir, get_model_dir, get_log_dir
 from cangjie.rnn.dataset import get_dataset
 from cangjie.rnn.dictionary import load_dictionary
-from cangjie.rnn.rnn import RNNSeg
+from cangjie.attention.birnnattention import BiRNNAttention
 from cangjie.utils.losses import mask_sparse_cross_entropy
 import tensorflow as tf
 from tensorflow.keras.callbacks import EarlyStopping, TensorBoard, ModelCheckpoint
@@ -9,7 +9,7 @@ import time
 import os
 
 
-def train_rnn_seg():
+def train_model():
     vocab_size = 3954 # count > min_char_count = 5
     num_states = 4
     total_num_train = 69000 # num_lines of msr_rnn_train.utf8
@@ -23,6 +23,8 @@ def train_rnn_seg():
     embedding_dim = 64
     rnn_units = 32
     pad_index = 0 # pad_index, to mask in loss
+
+    model_name = "birnn_attention"
 
     train_path = os.path.join(get_data_dir(), "msr_rnn_train.utf8")
     val_path = os.path.join(get_data_dir(), "msr_rnn_val.utf8")
@@ -52,13 +54,16 @@ def train_rnn_seg():
                               pad_index=pad_index)
 
     # === model
-    rnnseg = RNNSeg(vocab_size=vocab_size, embedding_dim=embedding_dim, rnn_units=rnn_units)
+    model = BiRNNAttention(vocab_size=vocab_size, embedding_dim=embedding_dim, rnn_units=rnn_units)
     # optimizer
     optimizer = tf.keras.optimizers.Adam(0.001)
 
-    rnnseg.compile(optimizer=optimizer,
+    #crf = model.crf_layer
+    model.compile(optimizer=optimizer,
                    loss=mask_sparse_cross_entropy,
+                  #loss=crf.loss,
                    metrics=['acc'])
+                  #metrics=[crf.accuracy])
 
     # callbacks
     callbacks = []
@@ -67,17 +72,18 @@ def train_rnn_seg():
                                     patience=5, restore_best_weights=True)
     callbacks.append(early_stopping_cb)
 
-    tensorboard_cb = TensorBoard(log_dir=os.path.join(get_log_dir(), "rnn_model"))
+    tensorboard_cb = TensorBoard(log_dir=os.path.join(get_log_dir(), model_name + "_model"))
     callbacks.append(tensorboard_cb)
 
-    checkpoint_path = os.path.join(get_model_dir(), "rnn_model", "ckpt")
+    checkpoint_path = os.path.join(get_model_dir(), model_name + "_model", "ckpt")
     checkpoint_cb = ModelCheckpoint(filepath=checkpoint_path,
                                     save_weights_only=True,
                                     save_best_only=True)
     callbacks.append(checkpoint_cb)
 
     # === Train
-    history = rnnseg.fit(train_dataset,
+    print(model_name)
+    history = model.fit(train_dataset,
                batch_size=batch_size,
                epochs=epochs,
                steps_per_epoch=num_train_batch,
@@ -85,14 +91,14 @@ def train_rnn_seg():
                validation_steps=num_val_batch,
                callbacks=callbacks)
 
-    print(rnnseg.summary())
+    print(model.summary())
 
     return True
 
 
 if __name__ == "__main__":
     start = time.time()
-    train_rnn_seg()
+    train_model()
     end = time.time()
     last = end - start
     print("\nTrain done! Lasts: %.2fs" % last)

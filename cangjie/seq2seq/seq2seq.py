@@ -1,5 +1,6 @@
 import tensorflow as tf
 from tensorflow.keras.layers import Embedding, Dense, GRU
+import numpy as np
 
 
 class Encoder(tf.keras.Model):
@@ -58,12 +59,54 @@ class Decoder(tf.keras.Model):
         return softmax, hidden_state
 
 
+class Seq2Seq(tf.keras.Model):
+    def __init__(self,
+                 encoder=None,
+                 decoder=None):
+        super(Seq2Seq, self).__init__()
+
+        self.encoder = encoder
+        self.decoder = decoder
+
+    def call(self, inputs=None):
+        encoder_hidden_state = self.encoder(inputs=inputs)
+
+        # inputs: [batch_size, steps]
+        batch_size = tf.shape(inputs)[0].numpy()
+        steps = tf.shape(inputs)[1].numpy()
+
+        decoder_start = tf.constant(np.array([5] * batch_size).reshape((batch_size, 1)))
+
+        labels = []
+        decoder_input = decoder_start
+        pre_hidden_state = encoder_hidden_state
+        for t in range(steps):
+            # decoder_output: [None, 1, num_states+1]
+            decoder_output, hidden_state = self.decoder(targets=decoder_input,
+                                                        pre_hidden_state=pre_hidden_state)
+
+            # label: [None, 1]
+            label = tf.argmax(decoder_output, axis=2)
+            labels.append(np.squeeze(label.numpy(), axis=1))
+
+            decoder_input = label
+            pre_hidden_state = hidden_state
+
+        # [batch_size, steps]
+        labels = np.array(labels).reshape((batch_size, steps))
+        return labels
+
+
 def test_seq2seq_once(encoder=None, decoder=None, inputs=None, targets=None):
     encoder_hidden_state = encoder(inputs=inputs)
     print('encoder_hidden_state', encoder_hidden_state.shape)
 
     softmax, hidden_state = decoder(targets=targets, pre_hidden_state=encoder_hidden_state)
     print('softmax', softmax.shape, 'decoder_hidden_state', hidden_state.shape)
+
+    seq2seq = Seq2Seq(encoder=encoder, decoder=decoder)
+    labels = seq2seq(inputs=inputs)
+    print('labels', labels.shape)
 
 
 if __name__ == "__main__":
